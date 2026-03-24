@@ -46,7 +46,7 @@ st.dataframe(st.session_state.history_df.tail())
 
 # --- 6. 刷新逻辑 ---
 if st.button("手动刷新"):
-    st.experimental_rerun()
+    st.rerun()
 
 # 自动刷新（每5秒刷新一次，注意：Streamlit Cloud 不推荐使用）
 # time.sleep(5)
