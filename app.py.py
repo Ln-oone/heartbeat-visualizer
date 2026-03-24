@@ -1,0 +1,67 @@
+Python 3.11.5 (tags/v3.11.5:cce6ba9, Aug 24 2023, 14:38:34) [MSC v.1936 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license()" for more information.
+>>> import streamlit as st
+... import pandas as pd
+... import time
+... from datetime import datetime, timedelta
+... import numpy as np
+... 
+... # --- 1. 页面配置 ---
+... st.set_page_config(
+...     page_title="心跳包实时监控",
+...     page_icon="🫀",
+...     layout="wide"
+... )
+... st.title("🫀 心跳包序号监控系统")
+... 
+... # --- 2. 模拟数据生成函数 ---
+... # 如果你有真实数据（如 CSV 文件或 API），可以替换这个函数
+... def generate_mock_data(num_points=20):
+...     # 模拟时间序列（最近的时间在最后）
+...     times = [datetime.now() - timedelta(seconds=i*5) for i in range(num_points)][::-1]
+...     # 模拟序号（假设正常递增，模拟网络抖动时的丢包或乱序）
+...     base_seq = int(time.time()) % 10000  # 使用当前时间戳做基础，保证每次运行序号不同
+...     sequences = np.random.randint(0, 5, size=num_points) + base_seq + np.arange(num_points)
+...     return pd.DataFrame({"时间": times, "序号": sequences})
+... 
+... # --- 3. 创建占位符用于动态更新 ---
+... # 使用 st.empty() 创建一个容器，后续的图表会在这里更新
+... chart_placeholder = st.empty()
+... 
+... # --- 4. 主循环（模拟实时数据流） ---
+... # Streamlit Cloud 不支持无限循环阻塞，这里用 st.experimental_rerun 结合时间间隔来模拟
+... # 但在 Streamlit Cloud 上，更推荐使用回调或简单的定时刷新
+... # 这里为了演示，我们做一个简单的自动刷新逻辑
+... 
+# 读取历史数据（如果有的话），这里我们简单地初始化一个空的 DataFrame
+if "history_df" not in st.session_state:
+    st.session_state.history_df = pd.DataFrame(columns=["时间", "序号"])
+
+# 生成新数据
+new_df = generate_mock_data(num_points=10)
+
+# 更新历史数据
+st.session_state.history_df = pd.concat([st.session_state.history_df, new_df]).reset_index(drop=True)
+
+# --- 5. 绘制折线图 ---
+# 使用 Streamlit 内置的图表功能，简单高效
+st.subheader("📈 心跳包序号趋势")
+# 注意：st.line_chart 只接受数字索引，所以需要先重置索引或使用时间作为索引
+# 这里我们直接画图，Streamlit 会自动处理
+st.line_chart(st.session_state.history_df.set_index("时间")["序号"])
+
+# 显示数据表格
+st.subheader("📋 最新数据")
+st.dataframe(st.session_state.history_df.tail())
+
+# --- 6. 自动刷新逻辑（可选） ---
+# Streamlit Cloud 不支持 while True 循环，所以需要其他方式
+# 这是一个简单的技巧：使用 st.experimental_rerun 结合时间间隔
+# 但注意：在 Streamlit Cloud 上，自动刷新可能会导致频繁重启，影响体验
+# 这里我们简单地显示一个刷新按钮，或者让页面每隔一段时间自动刷新
+if st.button("手动刷新"):
+    st.experimental_rerun()
+
+# 自动刷新（每 5 秒刷新一次）
+# 注意：在 Streamlit Cloud 上，自动刷新可能会导致频繁重启，影响体验
+# time.sleep(5)
